@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const GEMINI_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const SongSchema = z.object({
   title: z.string(),
@@ -25,31 +25,40 @@ type AIMessage = {
 };
 
 async function callAI(messages: AIMessage[]) {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("Missing LOVABLE_API_KEY");
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("Missing GEMINI_API_KEY");
 
-  const res = await fetch(GATEWAY_URL, {
+  const systemMessage = messages.find((message) => message.role === "system");
+  const userMessages = messages.filter((message) => message.role === "user");
+  const contents = userMessages.map((message) => ({
+    role: "user",
+    parts: toGeminiParts(message.content),
+  }));
+
+  const res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(key)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": key,
     },
     body: JSON.stringify({
-      model: MODEL,
-      messages,
-      response_format: { type: "json_object" },
+      systemInstruction: systemMessage
+        ? { parts: [{ text: systemMessage.content as string }] }
+        : undefined,
+      contents,
+      generationConfig: { responseMimeType: "application/json" },
     }),
   });
 
   if (!res.ok) {
     const body = await res.text();
     if (res.status === 429) throw new Error("Rate limit exceeded. Please try again shortly.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please add credits in your workspace.");
     throw new Error(`AI request failed [${res.status}]: ${body}`);
   }
 
   const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
+  const content = data?.candidates?.[0]?.content?.parts
+    ?.map((part: { text?: string }) => part.text ?? "")
+    .join("");
   if (!content) throw new Error("Empty AI response");
   try {
     const parsed = JSON.parse(content);
@@ -57,6 +66,19 @@ async function callAI(messages: AIMessage[]) {
   } catch {
     return { songs: [], notes: "The AI returned an unparseable response. Try rephrasing." };
   }
+}
+
+function toGeminiParts(content: AIMessage["content"]) {
+  if (typeof content === "string") return [{ text: content }];
+
+  return content.map((part) => {
+    if (part.type === "text") return { text: part.text ?? "" };
+    const imageUrl = part.image_url?.url ?? "";
+    const [metadata, data] = imageUrl.split(",", 2);
+    const mimeType = metadata?.match(/^data:(.*?);base64$/)?.[1];
+    if (!data || !mimeType) throw new Error("Invalid image data");
+    return { inlineData: { mimeType, data } };
+  });
 }
 
 const SYSTEM_TEXT = `You are an expert on Japanese music (J-pop, city pop, anime openings/endings, vocaloid, enka, J-rock, idol, etc.).

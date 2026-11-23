@@ -91,6 +91,14 @@ Vite should start a local development server.
 
 The terminal will display a local URL. Open that address in your browser.
 
+## Search data and result provenance
+
+The Word or lyric search now checks the MusicBrainz recording catalog first. When catalog results are found, each result is labeled **MusicBrainz catalog** and links to its MusicBrainz recording page. MusicBrainz supplies recording metadata; it does not provide a searchable lyrics catalog, so these results should not be treated as confirmed lyric matches.
+
+If the catalog returns no matches (or is temporarily unavailable), the app uses the configured Gemini API to suggest possible songs. These results are labeled **AI suggestion** and are not verified matches. Exact lyric search will require a separate licensed lyrics provider or a lyrics index that the project is permitted to use.
+
+The MusicBrainz integration does not require an API key. Set `OTOMORI_CONTACT` in your local `.env` to a contact email or project URL for the MusicBrainz User-Agent. The existing AI-assisted features still require `GEMINI_API_KEY` in that file. Do not commit `.env` or share it publicly.
+
 ## Running the Project in VS Code
 
 You can also run the project entirely from Visual Studio Code.
@@ -240,3 +248,16 @@ A license has not yet been specified for this repository.
 
 GitHub:
 https://github.com/ZShakes
+
+
+## Anime theme data (Jikan)
+
+Anime searches first query the public Jikan API (MyAnimeList data) for a matching anime and its listed opening/ending themes. Results returned by Jikan are labeled as Jikan anime themes and link to the anime's MyAnimeList page. Jikan's theme lists may omit insert songs, character songs, or other music. If Jikan cannot return usable theme data, the app falls back to Gemini suggestions and labels those results as AI-generated rather than verified.
+
+Jikan is a community-maintained, unofficial MyAnimeList API. Please follow its current usage guidelines and rate limits: https://docs.api.jikan.moe/
+
+## Anime releases, seasons, and alternate titles
+
+Anime tracklist searches now use Jikan's anime search and theme endpoints to find matching anime entries and retrieve their listed opening and ending themes. Results are grouped by the individual Jikan entry, so TV seasons and parts can appear separately from movies, OVAs, specials, and other release types when those entries are returned by Jikan.
+
+Each release group can show its database title, English and Japanese titles, alternate titles, release type, season/year label, and a link to its MyAnimeList source. This is a best-effort grouping based on Jikan's search results, not a guarantee that every item in a franchise has been found. Jikan's theme data may omit insert songs, character songs, and some releases. If Jikan returns no usable themes, the app falls back to clearly labeled AI suggestions.

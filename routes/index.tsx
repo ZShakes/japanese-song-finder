@@ -22,8 +22,21 @@ type Song = {
   role?: string;
   year?: string;
   reason?: string;
+  source?: "musicbrainz" | "jikan" | "ai";
+  sourceUrl?: string;
 };
-type Result = { songs: Song[]; notes?: string };
+type AnimeGroup = {
+  title: string;
+  titleEnglish?: string;
+  titleJapanese?: string;
+  alternateTitles?: string[];
+  releaseType?: string;
+  season?: string;
+  year?: string;
+  sourceUrl: string;
+  songs: Song[];
+};
+type Result = { songs: Song[]; animeGroups?: AnimeGroup[]; notes?: string };
 type Mode = "text" | "image" | "anime" | "artist" | "game";
 
 function Home() {
@@ -114,9 +127,9 @@ function Home() {
             an anime, an artist, or a game.
           </h1>
           <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-            Search by a phrase you half-remember, upload a scene from an anime,
-            list every opening and ending of a show, look up an artist's whole
-            discography, or find the Japanese vocal tracks from a Japanese game.
+            Search by a phrase you half-remember, upload a scene from an anime, list every opening
+            and ending of a show, look up an artist's whole discography, or find the Japanese vocal
+            tracks from a Japanese game.
           </p>
         </header>
 
@@ -291,7 +304,8 @@ function Home() {
       </div>
 
       <footer className="pb-10 text-center text-xs text-muted-foreground">
-        Powered by Lovable AI · results are AI-generated, please verify
+        Music metadata powered by MusicBrainz · Anime themes powered by Jikan · AI-assisted
+        discovery
       </footer>
     </main>
   );
@@ -305,81 +319,164 @@ function Results({ result }: { result: Result }) {
       </div>
     );
   }
+
+  if (result.animeGroups?.length) {
+    return (
+      <section className="mt-10 animate-float-in">
+        <div className="mb-5">
+          <h2 className="text-sm tracking-[0.25em] text-muted-foreground uppercase">
+            {result.animeGroups.length} matching release{result.animeGroups.length === 1 ? "" : "s"}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Themes are grouped by the specific TV season, movie, OVA, or special.
+          </p>
+        </div>
+        <div className="space-y-5">
+          {result.animeGroups.map((group) => (
+            <section
+              key={group.sourceUrl}
+              className="rounded-2xl border border-border bg-card/40 p-4 sm:p-5"
+            >
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-lg font-semibold text-foreground">
+                      {group.titleEnglish || group.title}
+                    </h3>
+                    <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs text-foreground">
+                      {group.releaseType || "Anime"}
+                    </span>
+                    {group.season && (
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+                        {group.season}
+                      </span>
+                    )}
+                  </div>
+                  {group.titleJapanese && (
+                    <p className="mt-1 text-sm text-muted-foreground">{group.titleJapanese}</p>
+                  )}
+                  {group.titleEnglish && group.titleEnglish !== group.title && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Japanese database title: {group.title}
+                    </p>
+                  )}
+                  {!!group.alternateTitles?.length && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Also known as: {group.alternateTitles.slice(0, 5).join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <a
+                  href={group.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-xs text-primary underline-offset-4 hover:underline"
+                >
+                  Anime source ↗
+                </a>
+              </div>
+              <ul className="space-y-3">
+                {group.songs.map((song, index) => (
+                  <li key={`${song.title}-${song.role}-${index}`}>
+                    <SongCard song={song} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+        {result.notes && <p className="mt-5 text-xs text-muted-foreground">{result.notes}</p>}
+      </section>
+    );
+  }
+
   return (
     <section className="mt-10 animate-float-in">
       <h2 className="mb-4 text-sm tracking-[0.25em] text-muted-foreground uppercase">
         {result.songs.length} result{result.songs.length === 1 ? "" : "s"}
       </h2>
       <ul className="space-y-3">
-        {result.songs.map((s, i) => (
-          <li
-            key={i}
-            className="glass group rounded-xl p-5 transition hover:border-primary/50"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="font-display text-xl leading-tight font-semibold text-foreground">
-                  {s.title}
-                </div>
-                {s.titleRomaji && s.titleRomaji !== s.title && (
-                  <div className="text-sm text-muted-foreground italic">
-                    {s.titleRomaji}
-                  </div>
-                )}
-                <div className="mt-1.5 text-sm text-foreground/90">
-                  {s.artist}
-                </div>
-                {(s.anime || s.role || s.year) && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {s.anime && (
-                      <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs text-accent-foreground">
-                        {s.anime}
-                      </span>
-                    )}
-                    {s.role && (
-                      <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-xs text-foreground">
-                        {s.role}
-                      </span>
-                    )}
-                    {s.year && (
-                      <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
-                        {s.year}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {s.reason && (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    {s.reason}
-                  </p>
-                )}
-              </div>
-              <a
-                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
-                  `${s.title} ${s.artist}`,
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
-              >
-                Listen ↗
-              </a>
-            </div>
+        {result.songs.map((song, index) => (
+          <li key={`${song.title}-${song.artist}-${index}`}>
+            <SongCard song={song} />
           </li>
         ))}
       </ul>
-      {result.notes && (
-        <p className="mt-5 text-xs text-muted-foreground">{result.notes}</p>
-      )}
+      {result.notes && <p className="mt-5 text-xs text-muted-foreground">{result.notes}</p>}
     </section>
   );
 }
 
-function ExampleChips({
-  onPick,
-}: {
-  onPick: (mode: Mode, value: string) => void;
-}) {
+function SongCard({ song }: { song: Song }) {
+  return (
+    <div className="glass group rounded-xl p-5 transition hover:border-primary/50">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="font-display text-xl leading-tight font-semibold text-foreground">
+            {song.title}
+          </div>
+          {song.titleRomaji && song.titleRomaji !== song.title && (
+            <div className="text-sm text-muted-foreground italic">{song.titleRomaji}</div>
+          )}
+          <div className="mt-1.5 text-sm text-foreground/90">{song.artist}</div>
+          {(song.anime || song.role || song.year) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {song.anime && (
+                <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs text-accent-foreground">
+                  {song.anime}
+                </span>
+              )}
+              {song.role && (
+                <span className="rounded-full bg-primary/20 px-2.5 py-0.5 text-xs text-foreground">
+                  {song.role}
+                </span>
+              )}
+              {song.year && (
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+                  {song.year}
+                </span>
+              )}
+            </div>
+          )}
+          {song.reason && <p className="mt-3 text-sm text-muted-foreground">{song.reason}</p>}
+          {song.source && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">
+                {song.source === "musicbrainz"
+                  ? "MusicBrainz catalog"
+                  : song.source === "jikan"
+                    ? "Jikan anime theme"
+                    : "AI suggestion"}
+              </span>
+              {song.sourceUrl && (
+                <a
+                  href={song.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {song.source === "jikan" ? "View anime source ↗" : "View recording source ↗"}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+        <a
+          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+            `${song.title} ${song.artist}`,
+          )}`}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary hover:text-foreground"
+        >
+          Listen ↗
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function ExampleChips({ onPick }: { onPick: (mode: Mode, value: string) => void }) {
   const examples: Array<[Mode, string, string]> = [
     ["text", "song about cherry blossoms", "🌸 cherry blossoms"],
     ["anime", "Bocchi the Rock!", "🎸 Bocchi the Rock!"],
@@ -392,9 +489,7 @@ function ExampleChips({
   ];
   return (
     <div className="mt-10">
-      <p className="mb-3 text-xs tracking-[0.25em] text-muted-foreground uppercase">
-        Try
-      </p>
+      <p className="mb-3 text-xs tracking-[0.25em] text-muted-foreground uppercase">Try</p>
       <div className="flex flex-wrap gap-2">
         {examples.map(([m, v, label]) => (
           <button

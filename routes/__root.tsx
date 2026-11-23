@@ -92,9 +92,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Otomori — Find Japanese Songs by Word, Image, or Anime" },
-      { name: "twitter:description", content: "Discover Japanese songs from a lyric, a phrase, an image, a full anime tracklist, or an artist name. AI-powered J-music search." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66b9d56d-b9a0-4c74-9e48-448bc123def9/id-preview-2fbb42bb--20fad4d5-6710-416f-b815-b8807e043694.lovable.app-1783966958476.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66b9d56d-b9a0-4c74-9e48-448bc123def9/id-preview-2fbb42bb--20fad4d5-6710-416f-b815-b8807e043694.lovable.app-1783966958476.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Discover Japanese songs from a lyric, a phrase, an image, a full anime tracklist, or an artist name. AI-powered J-music search.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66b9d56d-b9a0-4c74-9e48-448bc123def9/id-preview-2fbb42bb--20fad4d5-6710-416f-b815-b8807e043694.lovable.app-1783966958476.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66b9d56d-b9a0-4c74-9e48-448bc123def9/id-preview-2fbb42bb--20fad4d5-6710-416f-b815-b8807e043694.lovable.app-1783966958476.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
